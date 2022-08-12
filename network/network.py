@@ -32,6 +32,9 @@ G=nx.from_pandas_edgelist(df, 'pid', 'contact_pid', create_using=nx.DiGraph())
 #check if the graph is a directed acyclic graph
 print(nx.is_directed_acyclic_graph(G))
 
+#returns cycles
+print(sorted(nx.simple_cycles(G)))
+
 #draw graph
 nx.draw(G, with_labels=False, node_color = colors_list, cmap='turbo', node_size = 100, font_size = 5, width = .5 )
 plt.show()
