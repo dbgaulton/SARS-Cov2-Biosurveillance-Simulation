@@ -73,10 +73,13 @@ def add_to_fasta(new_seq, node):
 
 def find_seq(node):
 	records = list(SeqIO.parse("my_fasta.txt", "fasta"))
+	rec = 0
 	for i in range(0,len(records)):
+		print(records[i].name)
+		print(node)
 		if records[i].name == str(node):
-			record = records[i]
-	return record
+			rec = records[i]
+	return rec
 
 ##########################################################
 #read in alignment to pandas dataframe
@@ -134,6 +137,9 @@ G=nx.from_pandas_edgelist(df, 'pid', 'contact_pid', create_using=nx.DiGraph())
 
 ##########################################################
 
+#creating .fasta file to append
+open('my_fasta.txt', 'w')
+
 #nodes = keys, values = predecessors
 
 #determine all seeds
@@ -148,21 +154,27 @@ i=0
 for seed in seeds:
 	print('determining edges list.......')
 	edges = list(nx.dfs_edges(G, source = seed))
+	print(edges)
 	if len(edges) > 1:
 		for edge in reversed(edges):
 			if edge[1] == -1:
-				print('Adding seed seq to .fasta ........')
-				index = align2.iloc[i].values.tolist()
-				index = ''.join(index)
-				i+=1
-				add_to_fasta(index, str(edge[0]))
-			elif edge[1] != -1:
-				print('Mutating sequence, adding to fasta.....')
-				seq_to_change = find_seq(edge[1])
-				print(seq_to_change)
-				change = determine_change(thresh)
-				new_seq = commit_change(seq_to_change, change)
-				add_to_fasta(new_seq, edge[0])
+				print('Determining if sequence is already in fasta......')
+				record_val = find_seq(edge[0])
+				if str(record_val) == str(0):
+					print('Adding seed seq to .fasta ........')
+					index = align2.iloc[i].values.tolist()
+					index = ''.join(index)
+					i+=1
+					add_to_fasta(index, str(edge[0]))
+			if edge[1] != -1:
+				record_val = find_seq(edge[0])
+				if str(record_val) == str(0):
+					print('Mutating sequence, adding to fasta.....')
+					seq_to_change = find_seq(edge[1])
+					change = determine_change(thresh)
+					print(edge[1])
+					new_seq = commit_change(seq_to_change, change)
+					add_to_fasta(new_seq, edge[0])
 
 
 
