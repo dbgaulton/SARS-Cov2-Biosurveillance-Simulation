@@ -72,7 +72,7 @@ def add_to_fasta(new_seq, node):
 	ofile.close()
 
 def find_seq(node):
-	records = list(SeqIO.parse("my_fasta.txt", "fasta")) # dgaulton: going to parse this each time
+	records = list(SeqIO.parse("my_fasta.txt", "fasta")) # dgaulton: going to parse this each time, need to modify this for re-infections, could be two entries
 	rec = 0
 	for i in range(0,len(records)):
 		print(records[i].name)
@@ -182,11 +182,11 @@ for (node, pred) in zip(connections1, connections2):
 	if pred == -1:
 		seeds.append(node)
 
-#walk along every seed, determine edges via depth first search TODO here is where we need to take a look at the tick to avoid cycles edge[2]
+#walk along every seed, determine edges via depth first search
 i=0
-for seed in seeds:
+for seed in seeds: # dgaulton: will cause double traversals, could fix by passing in list of seeds to one call to edge_dfs
 	print('determining edges list.......')
-	edges = list(nx.dfs_edges(G, source = seed)) # might not be able to do DFS this way if looking at tick
+	edges = list(nx.edge_dfs(G, source = seed))
 	print(edges)
 	if len(edges) > 1:
 		for edge in edges:
@@ -201,7 +201,7 @@ for seed in seeds:
 					add_to_fasta(index, str(edge[1]))
 			if edge[0] != -1:
 				record_val = find_seq(edge[1])
-				if str(record_val) == str(0): # dgaulton: if not already in fasta
+				if str(record_val) == str(0): # dgaulton: if not already in fasta, won't work for second visit for reinfection
 					print('Mutating sequence, adding to fasta.....')
 					seq_to_change = find_seq(edge[0])
 					change = determine_change(thresh)
@@ -210,4 +210,63 @@ for seed in seeds:
 					add_to_fasta(new_seq, edge[1])
 
 
-# TODO maybe write custom traversal that looks at tick - def dfs_edges_with_ticks above
+# dgaulton: might need more of a bfs that goes tick by tick to make sure we don't mutate an seq from a prior infection for a later infection
+# during bfs, have the ability mutate the most recent seq that didn't occur after current infection
+
+mutations = {} # map of nodes -> list of a node's mutations tupled with tick at which that mutation occurred
+
+def get_most_recent_mutation(node, tick, mutations):
+	if len(mutations[node]) is 0:
+		return None
+	
+	i = 0
+	for i in range(len(mutations[node])):
+		if mutations[node][i][0] > tick:
+			return mutations[node][i-1]
+		i += 1
+
+	return mutations[node][i]
+
+i=0
+print('determining edges list.......')
+edges = list(nx.edge_bfs(G, source = seeds))
+print(edges)
+
+if len(edges) > 1:
+	for edge in edges:
+		if edge[0] == -1: # seed case
+			print('Adding seed seq........')
+			
+			index = align2.iloc[i].values.tolist()
+			index = ''.join(index)
+			i+=1
+			
+			if mutations[edge[1]] is None:
+				mutations[edge[1]] = [(0, index)]
+			else:
+				mutations[edge[1]].append((0, index))
+						
+		if edge[0] != -1: # normal case
+			print('Mutating sequence, adding to fasta.....')
+			seq_to_change = get_most_recent_mutation(edge[0], edge[2], mutations)
+
+			if seq_to_change is None:
+				print("Error: unexpectedly didn't have mutation for parent")
+
+			change = determine_change(thresh)
+			print(edge[1])
+			new_seq = commit_change(seq_to_change, change)
+
+			if mutations[edge[1]] is None:
+				mutations[edge[1]] = [(edge[2], new_seq)]
+			else:
+				mutations[edge[1]].append((edge[2], new_seq))
+
+# print(mutations)
+
+ofile = open("my_fasta.txt", "a")
+for node in mutations.keys():
+	for mutation in mutations[node]:
+		ofile.write(">" + str(node) + "\n" + mutation + "\n")
+
+ofile.close()
