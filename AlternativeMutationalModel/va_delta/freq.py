@@ -1,3 +1,5 @@
+from locale import currency
+from multiprocessing import current_process
 from Bio import AlignIO
 import pandas as pd
 import subprocess
@@ -176,11 +178,11 @@ open('my_fasta.txt', 'w')
 #nodes = keys, values = predecessors
 
 #determine all seeds
-print('determining all seed nodes......')
-seeds = []
-for (node, pred) in zip(connections1, connections2):
-	if pred == -1:
-		seeds.append(node)
+# print('determining all seed nodes......')
+# seeds = []
+# for (node, pred) in zip(connections1, connections2):
+# 	if pred == -1:
+# 		seeds.append(node)
 
 #walk along every seed, determine edges via depth first search
 # i=0
@@ -213,101 +215,142 @@ for (node, pred) in zip(connections1, connections2):
 # dgaulton: might need more of a bfs that goes tick by tick to make sure we don't mutate an seq from a prior infection for a later infection
 # during bfs, have the ability mutate the most recent seq that didn't occur after current infection
 
-mutations = {} # map of nodes -> list of a node's mutations tupled with tick at which that mutation occurred
+# mutations = {} # map of nodes -> list of a node's mutations tupled with tick at which that mutation occurred
 
-def get_most_recent_mutation(node, tick, mutations):
-	if len(mutations[node]) == 0:
-		return None
+# def get_most_recent_mutation(node, tick, mutations):
+# 	if len(mutations[node]) == 0:
+# 		return None
 	
-	i = 0
-	for i in range(len(mutations[node])):
-		if mutations[node][i][0] > tick:
-			return mutations[node][i-1]
-		i += 1
+# 	i = 0
+# 	for i in range(len(mutations[node])):
+# 		if mutations[node][i][0] > tick:
+# 			return mutations[node][i-1]
+# 		i += 1
 
-	return mutations[node][i]
+# 	return mutations[node][i]
 
-i=0
-print('determining edges list.......')
-edges = list(nx.edge_bfs(G, source = seeds))
-print(edges)
+# i=0
+# print('determining edges list.......')
+# edges = list(nx.edge_bfs(G, source = seeds))
+# print(edges)
 
-if len(edges) > 1:
-	for edge in edges:
-		if edge[0] == -1: # seed case
-			print('Adding seed seq........')
+# if len(edges) > 1:
+# 	for edge in edges:
+# 		if edge[0] == -1: # seed case
+# 			print('Adding seed seq........')
 			
-			index = align2.iloc[i].values.tolist()
-			index = ''.join(index)
-			i+=1
+# 			index = align2.iloc[i].values.tolist()
+# 			index = ''.join(index)
+# 			i+=1
 			
-			if mutations[edge[1]] is None:
-				mutations[edge[1]] = [(0, index)]
-			else:
-				mutations[edge[1]].append((0, index))
+# 			if mutations[edge[1]] is None:
+# 				mutations[edge[1]] = [(0, index)]
+# 			else:
+# 				mutations[edge[1]].append((0, index))
 						
-		if edge[0] != -1: # normal case
-			print('Mutating sequence, adding to fasta.....')
-			seq_to_change = get_most_recent_mutation(edge[0], edge[2], mutations)
+# 		if edge[0] != -1: # normal case
+# 			print('Mutating sequence, adding to fasta.....')
+# 			seq_to_change = get_most_recent_mutation(edge[0], edge[2], mutations)
 
-			if seq_to_change is None:
-				print("Error: unexpectedly didn't have mutation for parent")
+# 			if seq_to_change is None:
+# 				print("Error: unexpectedly didn't have mutation for parent")
 
-			change = determine_change(thresh)
-			print(edge[1])
-			new_seq = commit_change(seq_to_change, change)
+# 			change = determine_change(thresh)
+# 			print(edge[1])
+# 			new_seq = commit_change(seq_to_change, change)
 
-			if mutations[edge[1]] is None:
-				mutations[edge[1]] = [(edge[2], new_seq)]
-			else:
-				mutations[edge[1]].append((edge[2], new_seq))
-
-
-def dfs_with_tick(G, source): # TODO inject tick check
-	nodes = list(G.nbunch_iter(source))
-
-	visited_edges = set()
-	visited_nodes = set()
-	edges = {}
-
-	kwds = {
-		"data": False,
-		"keys": True
-	}
-
-	# start DFS
-	for start_node in nodes:
-		stack = [start_node]
-		while stack:
-			current_node = stack[-1]
-			if current_node not in visited_nodes:
-				edges[current_node] = iter(G.edges(current_node, **kwds))
-				visited_nodes.add(current_node)
-
-			try:
-				edge = next(edges[current_node])
-			except StopIteration:
-				# No more edges from the current node.
-				stack.pop()
-			else:
-				edgeid = edge
-				if edgeid not in visited_edges:
-					visited_edges.add(edgeid)
-					# Mark the traversed "to" node as to-be-explored.
-					stack.append(edge[1])
-					yield edge
-
-
+# 			if mutations[edge[1]] is None:
+# 				mutations[edge[1]] = [(edge[2], new_seq)]
+# 			else:
+# 				mutations[edge[1]].append((edge[2], new_seq))
 
 # print(mutations)
 
-ofile = open("my_fasta.txt", "a")
-for node in mutations.keys():
-	for mutation in mutations[node]:
-		ofile.write(">" + str(node) + "\n" + mutation + "\n")
+# ofile = open("my_fasta.txt", "a")
+# for node in mutations.keys():
+# 	for mutation in mutations[node]:
+# 		ofile.write(">" + str(node) + "\n" + mutation + "\n")
 
-ofile.close()
+# ofile.close()
 
 
+# def dfs_with_tick(G, sources): # TODO inject tick check
+# 	nodes = list(G.nbunch_iter(sources))
 
-# implement custom to look to tick
+# 	visited_edges = set()
+# 	visited_nodes = set()
+# 	edges = {}
+
+# 	kwds = {
+# 		"data": False,
+# 		"keys": True
+# 	}
+
+# 	# start DFS
+# 	for start_node in nodes:
+
+# 		current_tick = 0
+
+# 		index = align2.iloc[i].values.tolist()
+# 		index = ''.join(index)
+# 		i+=1
+
+# 		if mutations[start_node] is None:
+# 				mutations[start_node] = [(current_tick, index)]
+# 		else:
+# 			mutations[start_node].append((current_tick, index))
+
+# 		stack = [start_node]
+		
+# 		while stack:
+# 			current_node = stack[-1]
+
+
+			
+# 			if current_node not in visited_nodes:
+# 				edges[current_node] = iter(G.edges(current_node, **kwds))
+# 				visited_nodes.add(current_node)
+
+# 			try:
+# 				edge = next(edges[current_node])
+# 			except StopIteration:
+# 				# No more edges from the current node.
+# 				stack.pop()
+# 			else:
+# 				edgeid = edge
+# 				if edgeid not in visited_edges:
+# 					visited_edges.add(edgeid)
+# 					# Mark the traversed "to" node as to-be-explored.
+# 					stack.append(edge[1])
+# 					yield edge
+
+# need two data structures
+# one list to just append to to generate MSA of all sequences as we go
+# another dict that maps node to it's most recent sequence
+
+# This assumes the data read into df is in chronological order (ascending according to tick)
+current_sequences = {}
+i=0
+
+for row in df.itterows():
+	if row[3] == "-1": # seed case
+		# grab a new real sequence
+		print('Adding seed seq to .fasta ........')
+		index = align2.iloc[i].values.tolist()
+		index = ''.join(index)
+		i+=1
+		add_to_fasta(index, row[1])
+
+		# update the node's current sequence
+		current_sequences[row[1]] = index
+
+	else:
+		# Get the parent's sequence, mutate it, and append result to fasta
+		print('Mutating sequence, adding to fasta.....')
+		seq_to_change = current_sequences(row[3])
+		change = determine_change(thresh)
+		print(row[1])
+		new_seq = commit_change(seq_to_change, change)
+		add_to_fasta(new_seq, row[1])
+		
+		current_sequences[row[1]] = new_seq
