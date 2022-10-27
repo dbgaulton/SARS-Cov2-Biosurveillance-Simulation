@@ -332,7 +332,7 @@ open('my_fasta.txt', 'w')
 current_sequences = {}
 i=0
 
-for row in df.itterrows():
+for row in df.iterrows():
 	if row[3] == "-1": # seed case
 		# grab a new real sequence
 		print('Adding seed seq to .fasta ........')
