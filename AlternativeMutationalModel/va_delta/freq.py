@@ -143,7 +143,7 @@ from matplotlib import pyplot as plt
 
 #Read in network data
 print('reading in the network data....')
-df = pd.read_csv('output_abridges.csv')
+df = pd.read_csv('contact_network_va_delta.csv')
 
 
 #Create connection dataframe (pid, and contact_pid columns) TODO introduce time to edge in order to avoid cycles during DFS
@@ -332,25 +332,29 @@ open('my_fasta.txt', 'w')
 current_sequences = {}
 i=0
 
-for row in df.itterows():
-	if row[3] == "-1": # seed case
+#for row in df.iterrows():
+for pid, contact_pid, tick in zip(connections1, connections2, id1):
+	print(tick)
+	print(contact_pid)
+	print(pid)
+	if contact_pid == -1: # seed case
 		# grab a new real sequence
 		print('Adding seed seq to .fasta ........')
 		index = align2.iloc[i].values.tolist()
 		index = ''.join(index)
-		i+=1
-		add_to_fasta(index, row[1])
+		i += 1
+		add_to_fasta(index, pid)
 
 		# update the node's current sequence
-		current_sequences[row[1]] = index
+		current_sequences[pid] = index
 
 	else:
 		# Get the parent's sequence, mutate it, and append result to fasta
 		print('Mutating sequence, adding to fasta.....')
-		seq_to_change = current_sequences(row[3])
+		seq_to_change = current_sequences[contact_pid]
 		change = determine_change(thresh)
-		print(row[1])
+		print(pid)
 		new_seq = commit_change(seq_to_change, change)
-		add_to_fasta(new_seq, row[1])
+		add_to_fasta(new_seq, pid)
 		
-		current_sequences[row[1]] = new_seq
+		current_sequences[pid] = new_seq
