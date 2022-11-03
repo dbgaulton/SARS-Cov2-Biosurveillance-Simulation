@@ -332,7 +332,6 @@ open('my_fasta.txt', 'w')
 current_sequences = {}
 i=0
 
-#for row in df.iterrows():
 for pid, contact_pid, tick in zip(connections1, connections2, id1):
 	print(tick)
 	print(contact_pid)
