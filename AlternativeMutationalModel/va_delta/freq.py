@@ -68,6 +68,33 @@ def commit_change(index, change):
 	new_seq = ''.join(new_seq)
 	return new_seq
 
+def poor_mut_model(index, change):
+	# Rotate to a static new letter
+	new_seq = []
+	for (nucleotide, change_val) in zip(index, change):
+		if change_val == 'Yes':
+			if nucleotide == 'A':
+				new_nucleotide = 'T'
+				new_seq.append(new_nucleotide)
+			if nucleotide == 'T':
+				new_nucleotide = 'G'
+				new_seq.append(new_nucleotide)
+			if nucleotide == 'G':
+				new_nucleotide = 'C'
+				new_seq.append(new_nucleotide)
+			if nucleotide == 'C':
+				new_nucleotide == '-'
+				new_seq.append(new_nucleotide)
+			if nucleotide == '-':
+				new_nucleotide == 'A'
+				new_seq.append(new_nucleotide)
+		else:
+			new_nucleotide = nucleotide
+			new_seq.append(new_nucleotide)
+
+	new_seq = ''.join(new_seq)
+	return new_seq
+
 def add_to_fasta(new_seq, node):
 	ofile = open("my_fasta.txt", "a")
 	ofile.write(">" + str(node) + "\n" +new_seq + "\n")
