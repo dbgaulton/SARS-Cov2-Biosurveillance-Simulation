@@ -9,6 +9,10 @@ import glob
 import sys
 from Bio import SeqIO
 
+fasta_to_write = "my_fasta.poor_mut_model.txt"
+#fasta_to_write = "my_fasta.good_mut_model.txt"
+use_poor_mut_model = True
+
 #calculates threshold for nucleotide change based on shannon
 #column entropy
 
@@ -83,11 +87,10 @@ def poor_mut_model(index, change):
 				new_nucleotide = 'C'
 				new_seq.append(new_nucleotide)
 			if nucleotide == 'C':
-				new_nucleotide == '-'
+				new_nucleotide = 'A'
 				new_seq.append(new_nucleotide)
-			if nucleotide == '-':
-				new_nucleotide == 'A'
-				new_seq.append(new_nucleotide)
+			else:
+				new_seq.append(nucleotide)
 		else:
 			new_nucleotide = nucleotide
 			new_seq.append(new_nucleotide)
@@ -96,12 +99,12 @@ def poor_mut_model(index, change):
 	return new_seq
 
 def add_to_fasta(new_seq, node):
-	ofile = open("my_fasta.txt", "a")
+	ofile = open(fasta_to_write, "a")
 	ofile.write(">" + str(node) + "\n" +new_seq + "\n")
 	ofile.close()
 
 def find_seq(node):
-	records = list(SeqIO.parse("my_fasta.txt", "fasta")) # dgaulton: going to parse this each time, need to modify this for re-infections, could be two entries
+	records = list(SeqIO.parse(fasta_to_write, "fasta")) # dgaulton: going to parse this each time, need to modify this for re-infections, could be two entries
 	rec = 0
 	for i in range(0,len(records)):
 		print(records[i].name)
@@ -200,7 +203,7 @@ G=nx.from_pandas_edgelist(df, 'contact_pid', 'pid', create_using=nx.MultiDiGraph
 ##########################################################
 
 #creating .fasta file to append
-open('my_fasta.txt', 'w')
+open(fasta_to_write, 'w')
 
 #nodes = keys, values = predecessors
 
@@ -293,7 +296,7 @@ open('my_fasta.txt', 'w')
 
 # print(mutations)
 
-# ofile = open("my_fasta.txt", "a")
+# ofile = open(fasta_to_write, "a")
 # for node in mutations.keys():
 # 	for mutation in mutations[node]:
 # 		ofile.write(">" + str(node) + "\n" + mutation + "\n")
@@ -358,6 +361,7 @@ open('my_fasta.txt', 'w')
 # This assumes the data read into df is in chronological order (ascending according to tick)
 current_sequences = {}
 i=0
+max_seed_value_index = len(align2)-1
 
 for pid, contact_pid, tick in zip(connections1, connections2, id1):
 	print(tick)
@@ -368,7 +372,11 @@ for pid, contact_pid, tick in zip(connections1, connections2, id1):
 		print('Adding seed seq to .fasta ........')
 		index = align2.iloc[i].values.tolist()
 		index = ''.join(index)
-		i += 1
+		if i == max_seed_value_index:
+			i = 0
+		else:
+			i += 1
+
 		add_to_fasta(index, pid)
 
 		# update the node's current sequence
@@ -380,7 +388,13 @@ for pid, contact_pid, tick in zip(connections1, connections2, id1):
 		seq_to_change = current_sequences[contact_pid]
 		change = determine_change(thresh)
 		print(pid)
-		new_seq = commit_change(seq_to_change, change)
+		if (use_poor_mut_model):
+			new_seq = poor_mut_model(seq_to_change, change)
+		else:
+			new_seq = commit_change(seq_to_change, change)
+	
 		add_to_fasta(new_seq, pid)
 		
 		current_sequences[pid] = new_seq
+
+print("Done")
