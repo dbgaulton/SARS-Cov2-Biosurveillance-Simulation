@@ -9,13 +9,13 @@ import glob
 import sys
 from Bio import SeqIO
 
+# Set these values to run the good or poor mutational model
 fasta_to_write = "my_fasta.poor_mut_model.txt"
 #fasta_to_write = "my_fasta.good_mut_model.txt"
 use_poor_mut_model = True
 
 #calculates threshold for nucleotide change based on shannon
 #column entropy
-
 def column_entropy_thresh(freq_df):
 	e_act = 0
 	e_max = 0
@@ -176,12 +176,12 @@ print('reading in the network data....')
 df = pd.read_csv('contact_network_va_delta.csv')
 
 
-#Create connection dataframe (pid, and contact_pid columns) TODO introduce time to edge in order to avoid cycles during DFS
+#Create connection dataframe (pid, and contact_pid columns)
 connections1 = df.iloc[:,1] # pid
 connections2 = df.iloc[:,3] # contact_pid
 connections = pd.concat([connections1, connections2], axis = 1, ignore_index = False)
 
-#Create id dataframe (with tick and exit_state columns) TODO tick here includes time?
+#Create id dataframe (with tick and exit_state columns)
 id1 = df.iloc[:,0] # tick
 id2 = df.iloc[:,2] # exit_state
 ids = pd.concat([id1, id2], axis = 1) # dgaulton: looks like this is never used
@@ -198,7 +198,7 @@ colors_list = list(timelist.values())
 
 #draw directed graph network
 print('creating network digraph .......')
-G=nx.from_pandas_edgelist(df, 'contact_pid', 'pid', create_using=nx.MultiDiGraph(), edge_key='tick') # TODO need to add tick here to use down below - will be edge[2], also maybe need to use MultiDiGraph if repeat infection
+G=nx.from_pandas_edgelist(df, 'contact_pid', 'pid', create_using=nx.MultiDiGraph(), edge_key='tick') # tick will be edge[2]
 
 ##########################################################
 
@@ -354,6 +354,52 @@ open(fasta_to_write, 'w')
 # 					stack.append(edge[1])
 # 					yield edge
 
+# class node:
+# 	pid: str
+# 	latest_contact_pid: str
+# 	latest_varient: str
+# 	status: str
+
+# 	def __init__(self, pid, latest_contact_pid):
+# 		self.pid = pid
+# 		self.latest_contact_pid = latest_contact_pid
+
+# var1E - exposed, need to capture infector or pull in new seed
+# var1R - recovered, can ignore
+# var1Isymp or var1Iasymp - infected, at this point commit the sequence, will need to lookup if there is an infector
+
+# nodes = {}
+
+# i=0
+# max_seed_value_index = len(align2)-1
+
+# for pid, contact_pid, tick, exit_state in zip(connections1, connections2, id1, id2):
+# 	print(tick)
+# 	print(contact_pid)
+# 	print(pid)
+# 	print(exit_state)
+# 	if exit_state == "var1E":	
+# 			# update the node's current sequence
+# 			new_node = node(pid, -1)
+# 			nodes[pid] = new_node
+
+# 		else:
+# 			# Get the parent's sequence, mutate it, and append result to fasta
+# 			print('Mutating sequence, adding to fasta.....')
+# 			seq_to_change = nodes[contact_pid]
+# 			change = determine_change(thresh)
+# 			print(pid)
+# 			if (use_poor_mut_model):
+# 				new_seq = poor_mut_model(seq_to_change, change)
+# 			else:
+# 				new_seq = commit_change(seq_to_change, change)
+		
+# 			add_to_fasta(new_seq, pid)
+			
+# 			nodes[pid] = new_seq
+
+# print("Done")
+
 # need two data structures
 # one list to just append to to generate MSA of all sequences as we go
 # another dict that maps node to it's most recent sequence
@@ -363,38 +409,40 @@ current_sequences = {}
 i=0
 max_seed_value_index = len(align2)-1
 
-for pid, contact_pid, tick in zip(connections1, connections2, id1):
-	print(tick)
-	print(contact_pid)
-	print(pid)
-	if contact_pid == -1: # seed case
-		# grab a new real sequence
-		print('Adding seed seq to .fasta ........')
-		index = align2.iloc[i].values.tolist()
-		index = ''.join(index)
-		if i == max_seed_value_index:
-			i = 0
-		else:
-			i += 1
-
-		add_to_fasta(index, pid)
-
-		# update the node's current sequence
-		current_sequences[pid] = index
-
-	else:
-		# Get the parent's sequence, mutate it, and append result to fasta
-		print('Mutating sequence, adding to fasta.....')
-		seq_to_change = current_sequences[contact_pid]
-		change = determine_change(thresh)
+for pid, contact_pid, tick, exit_state in zip(connections1, connections2, id1, id2):
+	if exit_state == "var1E":
+		print(tick)
+		print(contact_pid)
 		print(pid)
-		if (use_poor_mut_model):
-			new_seq = poor_mut_model(seq_to_change, change)
+		print(exit_state)
+		if contact_pid == -1: # seed case
+			# grab a new real sequence
+			print('Adding seed seq to .fasta ........')
+			index = align2.iloc[i].values.tolist()
+			index = ''.join(index)
+			if i == max_seed_value_index:
+				i = 0
+			else:
+				i += 1
+
+			add_to_fasta(index, pid)
+
+			# update the node's current sequence
+			current_sequences[pid] = index
+
 		else:
-			new_seq = commit_change(seq_to_change, change)
-	
-		add_to_fasta(new_seq, pid)
+			# Get the parent's sequence, mutate it, and append result to fasta
+			print('Mutating sequence, adding to fasta.....')
+			seq_to_change = current_sequences[contact_pid]
+			change = determine_change(thresh)
+			print(pid)
+			if (use_poor_mut_model):
+				new_seq = poor_mut_model(seq_to_change, change)
+			else:
+				new_seq = commit_change(seq_to_change, change)
 		
-		current_sequences[pid] = new_seq
+			add_to_fasta(new_seq, pid)
+			
+			current_sequences[pid] = new_seq
 
 print("Done")
