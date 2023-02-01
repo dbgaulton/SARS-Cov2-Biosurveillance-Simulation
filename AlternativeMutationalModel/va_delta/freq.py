@@ -98,9 +98,9 @@ def poor_mut_model(index, change):
 	new_seq = ''.join(new_seq)
 	return new_seq
 
-def add_to_fasta(new_seq, node):
+def add_to_fasta(new_seq, node, tick):
 	ofile = open(fasta_to_write, "a")
-	ofile.write(">" + str(node) + "\n" +new_seq + "\n")
+	ofile.write(">" + str(node) + "," + str(tick) + "\n" + new_seq + "\n")
 	ofile.close()
 
 def find_seq(node):
@@ -425,7 +425,7 @@ for pid, contact_pid, tick, exit_state in zip(connections1, connections2, id1, i
 			else:
 				i += 1
 
-			add_to_fasta(index, pid)
+			# add_to_fasta(index, pid) don't include seed sequence in simulation output
 
 			# update the node's current sequence
 			current_sequences[pid] = index
@@ -441,7 +441,7 @@ for pid, contact_pid, tick, exit_state in zip(connections1, connections2, id1, i
 			else:
 				new_seq = commit_change(seq_to_change, change)
 		
-			add_to_fasta(new_seq, pid)
+			add_to_fasta(new_seq, pid, tick)
 			
 			current_sequences[pid] = new_seq
 
