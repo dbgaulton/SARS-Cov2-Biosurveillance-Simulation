@@ -72,8 +72,7 @@ def commit_change(index, change):
 	new_seq = ''.join(new_seq)
 	return new_seq
 
-def poor_mut_model(index, change):
-	# Rotate to a static new letter
+def intermediate_mut_model(index, change):
 	new_seq = []
 	for (nucleotide, change_val) in zip(index, change):
 		if change_val == 'Yes':
@@ -91,6 +90,34 @@ def poor_mut_model(index, change):
 				new_seq.append(new_nucleotide)
 			else:
 				new_seq.append(nucleotide)
+		else:
+			new_nucleotide = nucleotide
+			new_seq.append(new_nucleotide)
+
+	new_seq = ''.join(new_seq)
+	return new_seq
+
+def poor_mut_model(sequence):
+	new_seq = []
+	for nucleotide in sequence:
+		change_val = np.random.randint(1,2)
+		if change_val == 1:
+			new_nucleotide = np.random.randint(1,5)
+			if new_nucleotide == 1:
+				new_nucleotide = 'A'
+				new_seq.append(new_nucleotide)
+			if new_nucleotide == 2:
+				new_nucleotide = 'T'
+				new_seq.append(new_nucleotide)
+			if new_nucleotide == 3:
+				new_nucleotide = 'G'
+				new_seq.append(new_nucleotide)
+			if new_nucleotide == 4:
+				new_nucleotide = 'C'
+				new_seq.append(new_nucleotide)
+			if new_nucleotide == 5:
+				new_nucleotide ='-'
+				new_seq.append(new_nucleotide)
 		else:
 			new_nucleotide = nucleotide
 			new_seq.append(new_nucleotide)
@@ -437,7 +464,7 @@ for pid, contact_pid, tick, exit_state in zip(connections1, connections2, id1, i
 			change = determine_change(thresh)
 			print(pid)
 			if (use_poor_mut_model):
-				new_seq = poor_mut_model(seq_to_change, change)
+				new_seq = poor_mut_model(seq_to_change)
 			else:
 				new_seq = commit_change(seq_to_change, change)
 		
