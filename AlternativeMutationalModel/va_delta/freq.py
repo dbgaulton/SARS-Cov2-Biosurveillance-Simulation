@@ -10,9 +10,10 @@ import sys
 from Bio import SeqIO
 
 # Set these values to run the good or poor mutational model
-fasta_to_write = "my_fasta.poor_mut_model.txt"
-#fasta_to_write = "my_fasta.good_mut_model.txt"
-use_poor_mut_model = True
+output_file_prefix = "my_fasta.good_mut_model"
+fasta_to_write = output_file_prefix + ".sequences.fasta"
+metadata_file_to_write = output_file_prefix + ".metadata.tsv"
+use_poor_mut_model = False
 
 #calculates threshold for nucleotide change based on shannon
 #column entropy
@@ -125,10 +126,13 @@ def poor_mut_model(sequence):
 	new_seq = ''.join(new_seq)
 	return new_seq
 
-def add_to_fasta(new_seq, node, tick):
-	ofile = open(fasta_to_write, "a")
-	ofile.write(">" + str(node) + "," + str(tick) + "\n" + new_seq + "\n")
-	ofile.close()
+def add_to_fasta(seq, strain_id, date):
+	# seq_file = open(fasta_to_write, "a")
+	# metadata_file = open(metadata_file_to_write, "a")
+	seq_file.write(">" + str(strain_id) + "\n" + seq + "\n")
+	metadata_file.write(str(strain_id) + "\t" + str(date) + "\tncov\tNorth America\n")
+	# seq_file.close()
+	# metadata_file.close()
 
 def find_seq(node):
 	records = list(SeqIO.parse(fasta_to_write, "fasta")) # dgaulton: going to parse this each time, need to modify this for re-infections, could be two entries
@@ -229,8 +233,12 @@ G=nx.from_pandas_edgelist(df, 'contact_pid', 'pid', create_using=nx.MultiDiGraph
 
 ##########################################################
 
-#creating .fasta file to append
-open(fasta_to_write, 'w')
+#creating .fasta and .tsv files to append
+seq_file = open(fasta_to_write, 'w')
+metadata_file = open(metadata_file_to_write, 'w')
+
+# Prep metadata TSV file with required column names: https://docs.nextstrain.org/projects/ncov/en/latest/guides/data-prep/local-data.html#required-metadata
+metadata_file.write("strain\tdate\tvirus\tregion\n")
 
 # need two data structures
 # one list to just append to to generate MSA of all sequences as we go
@@ -240,6 +248,10 @@ open(fasta_to_write, 'w')
 current_sequences = {}
 i=0
 max_seed_value_index = len(align2)-1
+
+start_date = "2021-05-31" # start of Delta strain
+
+strain_id = 0 # initialize strain_id for fasta, for now just increment a value, in the future could use node pid but would have to append to it in the case of multiple infections for a given pid
 
 for pid, contact_pid, tick, exit_state in zip(connections1, connections2, id1, id2):
 	if exit_state == "var1E":
@@ -271,8 +283,15 @@ for pid, contact_pid, tick, exit_state in zip(connections1, connections2, id1, i
 			else:
 				new_seq = commit_change(seq_to_change, change)
 		
-			add_to_fasta(new_seq, pid, tick)
+			date = pd.to_datetime(start_date) + pd.DateOffset(days=tick)
+
+			add_to_fasta(new_seq, strain_id, date)
 			
+			strain_id += 1
+
 			current_sequences[pid] = new_seq
+
+seq_file.close()
+metadata_file.close()
 
 print("Done")
