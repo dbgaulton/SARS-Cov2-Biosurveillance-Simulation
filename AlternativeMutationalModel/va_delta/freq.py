@@ -10,10 +10,12 @@ import sys
 from Bio import SeqIO
 
 # Set these values to run the good or poor mutational model
-output_file_prefix = "my_fasta.good_mut_model"
+#output_file_prefix = "test_new_metadata.good_mut_model"
+output_file_prefix = sys.argv[1] if sys.argv[1] is not None else "simulation_output"
 fasta_to_write = output_file_prefix + ".sequences.fasta"
 metadata_file_to_write = output_file_prefix + ".metadata.tsv"
-use_poor_mut_model = False
+use_poor_mut_model = True if len(sys.argv) > 2 and sys.argv[2] == "-p" else False
+seq_limit = 16521
 
 #calculates threshold for nucleotide change based on shannon
 #column entropy
@@ -27,7 +29,8 @@ def column_entropy_thresh(freq_df):
 		p_xm = 1/len(freq_df.index)
 		e_max += p_xm*np.log(p_xm)
 
-	thresh = 1-(e_act/e_max)
+	thresh = (1-(e_act/e_max))*100
+	print(thresh)
 
 	if np.isnan(thresh) == True:
 		thresh = 0
@@ -39,6 +42,7 @@ def column_entropy_thresh(freq_df):
 def determine_change(thresh):
 	change = []
 	for threshold in thresh:
+		#import pdb; pdb.set_trace()
 		val = np.random.randint(0,100)
 		if val < threshold:
 			change.append('Yes')
@@ -253,8 +257,10 @@ start_date = "2021-05-31" # start of Delta strain
 
 strain_id = 0 # initialize strain_id for fasta, for now just increment a value, in the future could use node pid but would have to append to it in the case of multiple infections for a given pid
 
+sequences_mutated = 0
+
 for pid, contact_pid, tick, exit_state in zip(connections1, connections2, id1, id2):
-	if exit_state == "var1E":
+	if exit_state == "var1E" and strain_id < seq_limit:
 		print(tick)
 		print(contact_pid)
 		print(pid)
@@ -264,7 +270,7 @@ for pid, contact_pid, tick, exit_state in zip(connections1, connections2, id1, i
 			print('Adding seed seq to .fasta ........')
 			index = align2.iloc[i].values.tolist()
 			index = ''.join(index)
-			if i == max_seed_value_index:
+			if i == max_seed_value_index: # wrap to the beginning of seed sequences if we've run out
 				i = 0
 			else:
 				i += 1
